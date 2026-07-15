@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dakshin Flavors | Heritage Master Edition</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --royal-maroon: #630000;
+            --gold-leaf: #D4AF37;
+            --parchment: #FCF8F0;
+            --deep-black: #1A0F0F;
+            --shadow: 0 15px 40px rgba(0,0,0,0.2);
+        }
+
+        body { 
+            margin: 0; font-family: 'Outfit', sans-serif; 
+            background-color: var(--parchment); 
+            background-image: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+            color: var(--deep-black); overflow-x: hidden; scroll-behavior: smooth;
+        }
+
+        .hidden { display: none !important; }
+
+        /* --- HERO --- */
+        .hero {
+            height: 35vh; width: 100%; position: relative;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--deep-black); border-bottom: 5px solid var(--gold-leaf);
+        }
+        .hero-img { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0.4; }
+        .hero-content { 
+            position: relative; z-index: 5; text-align: center; 
+            border: 2px solid var(--gold-leaf); padding: 30px; background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+        }
+        .hero-content h1 { font-family: 'Cinzel', serif; font-size: clamp(2rem, 6vw, 4rem); color: var(--gold-leaf); margin: 0; letter-spacing: 5px; }
+
+        /* --- HEADER --- */
+        header { 
+            background: var(--royal-maroon); padding: 15px 5%; 
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 1000; border-bottom: 3px solid var(--gold-leaf);
+        }
+        .logo { font-family: 'Cinzel', serif; font-size: 1.8rem; color: var(--gold-leaf); }
+
+        /* --- NAVIGATION --- */
+        .cat-scroll { padding: 15px 5%; display: flex; gap: 12px; overflow-x: auto; scrollbar-width: none; background: var(--parchment); position: sticky; top: 73px; z-index: 999; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .cat-pill { padding: 10px 20px; border: 1px solid var(--gold-leaf); background: white; color: var(--royal-maroon); cursor: pointer; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; transition: 0.3s; white-space: nowrap; }
+        .cat-pill.active { background: var(--royal-maroon); color: var(--gold-leaf); }
+
+        /* --- LAYOUT --- */
+        .container { display: grid; grid-template-columns: 1fr 400px; gap: 40px; padding: 20px 5% 80px 5%; }
+        @media (max-width: 1200px) { .container { grid-template-columns: 1fr; } .cart-panel { position: static !important; } }
+
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .food-card { background: white; border: 1px solid #e0d5c0; position: relative; transition: 0.4s; overflow: hidden; }
+        .food-card:hover { transform: translateY(-5px); border-color: var(--gold-leaf); box-shadow: var(--shadow); }
+        .food-img { width: 100%; height: 180px; object-fit: cover; border-bottom: 1px solid var(--gold-leaf); transition: 0.5s; }
+        .food-card:hover .food-img { transform: scale(1.05); }
+        
+        .food-info { padding: 20px; text-align: center; }
+        .food-info h4 { font-family: 'Cinzel', serif; color: var(--royal-maroon); margin: 0 0 10px 0; font-size: 1.1rem; min-height: 2.5rem; }
+        .signature-badge { position: absolute; top: 10px; left: 10px; background: var(--royal-maroon); color: var(--gold-leaf); padding: 4px 10px; font-size: 0.65rem; font-weight: 800; border: 1px solid var(--gold-leaf); z-index: 2; }
+
+        .add-btn { background: var(--royal-maroon); color: var(--gold-leaf); border: 1px solid var(--gold-leaf); padding: 10px; width: 100%; cursor: pointer; font-weight: 700; text-transform: uppercase; transition: 0.3s; }
+        .add-btn:hover { background: var(--gold-leaf); color: var(--royal-maroon); }
+
+        /* --- CART --- */
+        .cart-panel { background: white; padding: 30px; border: 3px double var(--gold-leaf); position: sticky; top: 150px; height: fit-content; box-shadow: var(--shadow); }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 0.9rem; }
+        .qty-ctrl { display: flex; align-items: center; gap: 10px; }
+        .qty-btn { background: var(--royal-maroon); color: var(--gold-leaf); border: none; width: 25px; height: 25px; cursor: pointer; font-weight: 800; }
+
+        .royal-btn { background: var(--royal-maroon); color: var(--gold-leaf); border: 1px solid var(--gold-leaf); padding: 18px; width: 100%; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* --- ADMIN DASHBOARD --- */
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 15px; border: 2px solid var(--gold-leaf); text-align: center; }
+        .live-order-card { background: white; padding: 20px; border: 2px solid var(--gold-leaf); margin-bottom: 15px; border-left: 10px solid var(--royal-maroon); animation: slideIn 0.4s ease; }
+        
+        @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+    </style>
+</head>
+<body>
+
+<div id="login-page">
+    <div style="height:100vh; display:flex; align-items:center; justify-content:center; background: var(--deep-black);">
+        <div style="text-align:center; padding:50px; border:2px solid var(--gold-leaf); background: rgba(255,255,255,0.02); max-width: 400px; width: 90%;">
+            <h1 style="color:var(--gold-leaf); font-family:'Cinzel'; font-size:3rem; margin:0;">DAKSHIN</h1>
+            <p style="color:white; letter-spacing:4px; font-size:0.7rem; margin-bottom:40px;">HERITAGE DINING</p>
+            <input id="user" placeholder="USERNAME" style="display:block; width:100%; padding:15px; margin:10px auto; background:none; border:1px solid var(--gold-leaf); color:white; text-align:center; box-sizing: border-box; outline: none;">
+            <input id="pass" type="password" placeholder="PASSWORD (1234)" style="display:block; width:100%; padding:15px; margin:10px auto; background:none; border:1px solid var(--gold-leaf); color:white; text-align:center; box-sizing: border-box; outline: none;">
+            <button class="royal-btn" onclick="login()">Enter Court</button>
+        </div>
+    </div>
+</div>
+
+<div id="app" class="hidden">
+    <header>
+        <div class="logo">DAKSHIN</div>
+        <div style="display:flex; gap:15px; align-items:center;">
+            <select id="tableNum" style="background:none; color:var(--gold-leaf); border:1px solid var(--gold-leaf); padding:5px; font-family:'Outfit';">
+                <option>Table 01</option><option>Table 02</option><option>Table 03</option><option>VIP Table</option>
+            </select>
+            <button onclick="location.reload()" style="background:none; border:1px solid var(--gold-leaf); color:var(--gold-leaf); padding:5px 12px; cursor:pointer; font-size:0.7rem; font-weight:800;">LOGOUT</button>
+        </div>
+    </header>
+
+    <div id="customer-view" class="hidden">
+        <section class="hero">
+            <img src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=1200" class="hero-img">
+            <div class="hero-content"><h1>The Heritage Menu</h1></div>
+        </section>
+
+        <div class="cat-scroll">
+            <button class="cat-pill active" onclick="filterMenu('All', this)">All Feasts</button>
+            <button class="cat-pill" onclick="filterMenu('Biryani', this)">Biryanis</button>
+            <button class="cat-pill" onclick="filterMenu('Curry', this)">Curries</button>
+            <button class="cat-pill" onclick="filterMenu('Fried Rice', this)">Fried Rice</button>
+            <button class="cat-pill" onclick="filterMenu('Breads', this)">Royal Breads</button>
+        </div>
+
+        <div style="padding: 10px 5%;"><input type="text" id="menuSearch" class="royal-btn" style="background:white; color:black; text-align:left; padding-left:20px; font-weight:400; text-transform:none;" placeholder="Search for your favorite dish..." onkeyup="searchMenu()"></div>
+
+        <div class="container">
+            <div class="menu-grid" id="menu"></div>
+            <div class="cart-panel">
+                <h3 style="font-family:'Cinzel'; text-align:center; color:var(--royal-maroon); margin-top:0;">Your Basket</h3>
+                <div id="cartList" style="min-height:100px; color:#666;">Selection empty.</div>
+                <hr style="border:0; border-top:2px solid var(--gold-leaf); margin:20px 0; opacity: 0.3;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                    <span style="font-weight:700;">TOTAL</span>
+                    <span id="total" style="font-size:1.8rem; font-weight:800; color:var(--royal-maroon);">₹0</span>
+                </div>
+                <button class="royal-btn" onclick="placeOrder()">Place Order</button>
+                <div id="cust-hist" style="margin-top:30px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-view" class="hidden">
+        <div style="background: var(--royal-maroon); padding: 10px 5%; display: flex; gap: 15px; position: sticky; top: 73px; z-index: 998;">
+            <button class="cat-pill active" id="tab-kitchen" onclick="switchAdminTab('kitchen')">🔥 Kitchen</button>
+            <button class="cat-pill" id="tab-sales" onclick="switchAdminTab('sales')">📊 Dashboard</button>
+        </div>
+        
+        <div style="padding: 30px 5%;">
+            <div id="sec-kitchen">
+                <h2 style="font-family:'Cinzel'; color:var(--royal-maroon);">Live Kitchen Queue</h2>
+                <div id="admin-live-orders"></div>
+            </div>
+            <div id="sec-sales" class="hidden">
+                <div class="stat-grid">
+                    <div class="stat-card"><h5>REVENUE</h5><h2 id="stat-revenue" style="color:var(--royal-maroon)">₹0</h2></div>
+                    <div class="stat-card"><h5>ORDERS</h5><h2 id="stat-orders">0</h2></div>
+                    <div class="stat-card"><h5>ACTIVE</h5><h2 id="stat-tables">0</h2></div>
+                </div>
+                <div class="stat-card" style="text-align:left;"><h3 style="font-family:'Cinzel'">Popular Items</h3><div id="popular-list"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<audio id="orderSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+<script>
+// --- YOUR FIREBASE CONFIG ---
+const firebaseConfig = {
+  apiKey: "AIzaSyDpgrSxhtBeJKzbqqXo2yUkFKwzqHsGV18",
+  authDomain: "dakshin-flavours.firebaseapp.com",
+  databaseURL: "https://dakshin-flavours-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "dakshin-flavours",
+  storageBucket: "dakshin-flavours.firebasestorage.app",
+  messagingSenderId: "114355974417",
+  appId: "1:114355974417:web:8c7a37cedf7d83bf3b1cb0"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// --- FULL MENU DATA ---
+const items = [
+    {name:"Chicken Dum Biryani", price:190, cat:"Biryani", sig:true, img:"https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?w=400"},
+    {name:"Chicken Fry Biryani", price:200, cat:"Biryani", sig:false, img:"https://images.unsplash.com/photo-1633945274405-b6c8069047b0?w=400"},
+    {name:"Chicken Tikka Biryani", price:249, cat:"Biryani", sig:false, img:"https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?w=400"},
+    {name:"Mutton Biryani", price:299, cat:"Biryani", sig:true, img:"https://images.unsplash.com/photo-1645177623570-ad4b5af40adb?w=400"},
+    {name:"Prawn Biryani", price:249, cat:"Biryani", sig:false, img:"https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?w=400"},
+    {name:"Chicken Curry", price:190, cat:"Curry", sig:false, img:"https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=400"},
+    {name:"Chicken Butter Masala", price:220, cat:"Curry", sig:true, img:"https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=400"},
+    {name:"Mutton Curry", price:300, cat:"Curry", sig:true, img:"https://images.unsplash.com/photo-1601050633647-8f8f2f3ee059?w=400"},
+    {name:"Veg Fried Rice", price:120, cat:"Fried Rice", sig:false, img:"https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400"},
+    {name:"Chicken Fried Rice", price:170, cat:"Fried Rice", sig:false, img:"https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400"},
+    {name:"Butter Naan", price:40, cat:"Breads", sig:false, img:"https://images.unsplash.com/photo-1533777857889-4be7c70b33f7?w=400"},
+    {name:"Garlic Naan", price:45, cat:"Breads", sig:false, img:"https://images.unsplash.com/photo-1533777857889-4be7c70b33f7?w=400"}
+    // ... Extend this with all 50 items
+];
+
+let cart = {};
+let lastProcessedOrder = null;
+
+function login(){
+    let u = document.getElementById('user').value.toLowerCase();
+    let p = document.getElementById('pass').value;
+    if(p === '1234'){
+        document.getElementById('login-page').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        if(u === 'admin'){
+            document.getElementById('admin-view').classList.remove('hidden');
+            if (Notification.permission !== 'granted') Notification.requestPermission();
+            listenToOrders();
+        } else {
+            document.getElementById('customer-view').classList.remove('hidden');
+            renderMenu();
+        }
+    } else { alert("ACCESS DENIED"); }
+}
+
+function renderMenu(data = items){
+    let grid = document.getElementById('menu'); grid.innerHTML = "";
+    data.forEach(i => {
+        grid.innerHTML += `<div class="food-card">
+            ${i.sig ? '<div class="signature-badge">Royal Pick</div>' : ''}
+            <img src="${i.img}" class="food-img" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400'">
+            <div class="food-info">
+                <h4>${i.name}</h4>
+                <span style="font-weight:800; display:block; margin-bottom:15px; color:var(--royal-maroon)">₹${i.price}</span>
+                <button class="add-btn" onclick="addToCart('${i.name}', ${i.price})">ADD TO BASKET</button>
+            </div>
+        </div>`;
+    });
+}
+
+function filterMenu(cat, btn){
+    document.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderMenu(cat === 'All' ? items : items.filter(i => i.cat === cat));
+}
+
+function searchMenu(){
+    let q = document.getElementById('menuSearch').value.toLowerCase();
+    renderMenu(items.filter(i => i.name.toLowerCase().includes(q)));
+}
+
+function addToCart(n, p){
+    cart[n] = cart[n] ? {price: p, qty: cart[n].qty + 1} : {price: p, qty: 1};
+    updateCartUI();
+}
+
+function updateQty(n, d){
+    cart[n].qty += d;
+    if(cart[n].qty <= 0) delete cart[n];
+    updateCartUI();
+}
+
+function updateCartUI(){
+    let list = document.getElementById('cartList'); let total = 0; list.innerHTML = "";
+    Object.keys(cart).forEach(k => {
+        let sub = cart[k].price * cart[k].qty; total += sub;
+        list.innerHTML += `<div class="cart-item"><span>${k}</span><div class="qty-ctrl"><button class="qty-btn" onclick="updateQty('${k}',-1)">-</button><span>${cart[k].qty}</span><button class="qty-btn" onclick="updateQty('${k}',1)">+</button></div></div>`;
+    });
+    document.getElementById('total').innerText = "₹" + total;
+}
+
+function placeOrder(){
+    if(Object.keys(cart).length === 0) return alert("Select items first!");
+    let order = { table: document.getElementById('tableNum').value, items: cart, total: document.getElementById('total').innerText, status: "Pending", ts: Date.now() };
+    db.ref('orders').push(order);
+    generatePDF(order); cart = {}; updateCartUI(); alert("Order Sent!");
+}
+
+function generatePDF(o){
+    const { jsPDF } = window.jspdf; const doc = new jsPDF();
+    doc.setFillColor(99, 0, 0); doc.rect(0, 0, 210, 40, 'F');
+    doc.setTextColor(212, 175, 55); doc.setFontSize(22); doc.text("DAKSHIN FLAVORS", 105, 25, {align:'center'});
+    doc.setTextColor(0,0,0); doc.setFontSize(10); doc.text(`Bill: ${o.ts.toString().slice(-4)}`, 20, 50);
+    let y = 60;
+    Object.keys(o.items).forEach(k => { doc.text(`${k} x ${o.items[k].qty}`, 20, y); doc.text(`Rs ${o.items[k].price * o.items[k].qty}`, 170, y); y += 10; });
+    doc.text(`TOTAL: ${o.total}`, 20, y+10); doc.save(`Dakshin_Bill.pdf`);
+}
+
+function switchAdminTab(t){
+    document.getElementById('sec-kitchen').classList.add('hidden'); document.getElementById('sec-sales').classList.add('hidden');
+    document.getElementById('tab-kitchen').classList.remove('active'); document.getElementById('tab-sales').classList.remove('active');
+    document.getElementById('sec-'+t).classList.remove('hidden'); document.getElementById('tab-'+t).classList.add('active');
+}
+
+function listenToOrders(){
+    db.ref('orders').on('value', (snap) => {
+        const data = snap.val(); if(!data) return;
+        const live = document.getElementById('admin-live-orders'); live.innerHTML = "";
+        let rev = 0, ordCount = 0, tables = new Set(), itemCounts = {};
+
+        const orderIds = Object.keys(data).sort();
+        const latestId = orderIds[orderIds.length - 1];
+
+        if(lastProcessedOrder && lastProcessedOrder !== latestId && data[latestId].status === "Pending"){
+            document.getElementById('orderSound').play();
+            if(Notification.permission === "granted") {
+                new Notification("🔥 NEW ORDER!", { body: `Table ${data[latestId].table} placed a new order.`, icon: "https://cdn-icons-png.flaticon.com/512/1046/1046747.png" });
+            }
+        }
+        lastProcessedOrder = latestId;
+
+        Object.keys(data).reverse().forEach(id => {
+            let o = data[id];
+            if(o.status === "Pending"){
+                rev += parseInt(o.total.replace('₹','')); ordCount++; tables.add(o.table);
+                Object.keys(o.items).forEach(n => itemCounts[n] = (itemCounts[n] || 0) + o.items[n].qty);
+                live.innerHTML += `<div class="live-order-card"><strong>${o.table} (#${id.slice(-4)})</strong><p>${Object.keys(o.items).join(", ")}</p><button class="add-btn" style="width:auto; padding:5px 15px;" onclick="markServed('${id}')">DISPATCH</button></div>`;
+            }
+        });
+        document.getElementById('stat-revenue').innerText = "₹" + rev.toLocaleString();
+        document.getElementById('stat-orders').innerText = ordCount;
+        document.getElementById('stat-tables').innerText = tables.size;
+    });
+}
+
+function markServed(id){ db.ref('orders/' + id).update({status: "Served"}); }
+</script>
+</body>
+</html>
