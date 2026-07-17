@@ -199,3 +199,5 @@ The project is deployed using the following AWS services:
 B.Tech – Computer Science and Engineering
 
 BVC Engineering College
+
+website link : https://bala172.github.io/Restaurant-Management-System/
