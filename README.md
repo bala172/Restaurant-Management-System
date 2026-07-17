@@ -199,9 +199,3 @@ The project is deployed using the following AWS services:
 B.Tech – Computer Science and Engineering
 
 BVC Engineering College
-
----
-
-# 📄 License
-
-This project was developed for educational and AWS Internship purposes.
